@@ -1,0 +1,178 @@
+version: '3.8'
+
+networks:
+  geely-net:
+    driver: bridge
+
+volumes:
+  # Unified Portal
+  portal_pg_data:
+  portal_redis_data:
+  # TPD2
+  tpd2_pg_data:
+  tpd2_uploads:
+  # Writer
+  writer_data:
+  # Todify4
+  todify4_data:
+  todify4_uploads:
+
+services:
+  # =================================================================
+  # 1. 统一网关 (Unified Gateway)
+  # =================================================================
+  gateway:
+    image: nginx:alpine
+    container_name: geely-gateway
+    restart: always
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    networks:
+      - geely-net
+    depends_on:
+      - portal-frontend
+      - tpd2-frontend
+      - writer-frontend
+      - todify4-frontend
+
+  # =================================================================
+  # 2. Unified Portal (门户主应用)
+  # =================================================================
+  portal-postgres:
+    image: postgres:15-alpine
+    container_name: portal-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: portal
+      POSTGRES_PASSWORD: ${PORTAL_DB_PWD:-portal123}
+      POSTGRES_DB: portal
+    volumes:
+      - portal_pg_data:/var/lib/postgresql/data
+    networks:
+      - geely-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U portal"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  portal-redis:
+    image: redis:7-alpine
+    container_name: portal-redis
+    restart: always
+    command: redis-server --requirepass ${PORTAL_REDIS_PWD:-redis123}
+    volumes:
+      - portal_redis_data:/data
+    networks:
+      - geely-net
+
+  portal-frontend:
+    image: unified-portal-frontend:v1.0
+    container_name: portal-frontend
+    restart: always
+    env_file:
+      - ./envs/portal.env
+    environment:
+      DATABASE_URL: postgresql://portal:${PORTAL_DB_PWD:-portal123}@portal-postgres:5432/portal
+      REDIS_URL: redis://:${PORTAL_REDIS_PWD:-redis123}@portal-redis:6379
+    networks:
+      - geely-net
+    depends_on:
+      portal-postgres:
+        condition: service_healthy
+      portal-redis:
+        condition: service_started
+
+  # =================================================================
+  # 3. TPD2 (汽车推广系统)
+  # =================================================================
+  tpd2-postgres:
+    image: tpd2-postgres:v1.1
+    container_name: tpd2-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${TPD2_DB_PWD:-mysecretpassword}
+      POSTGRES_DB: todify2
+    volumes:
+      - tpd2_pg_data:/var/lib/postgresql/data
+    networks:
+      - geely-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  tpd2-backend:
+    image: tpd2-backend:v1.1
+    container_name: tpd2-backend
+    restart: always
+    env_file:
+      - ./envs/tpd2.env
+    environment:
+      PG_HOST: tpd2-postgres
+      PG_PASSWORD: ${TPD2_DB_PWD:-mysecretpassword}
+    volumes:
+      - tpd2_uploads:/app/uploads
+    networks:
+      - geely-net
+    depends_on:
+      tpd2-postgres:
+        condition: service_healthy
+
+  tpd2-frontend:
+    image: tpd2-frontend:v1.1
+    container_name: tpd2-frontend
+    restart: always
+    networks:
+      - geely-net
+
+  # =================================================================
+  # 4. Writer (AI 文案助手)
+  # =================================================================
+  writer-backend:
+    image: writer-backend:latest
+    container_name: writer-backend
+    restart: always
+    env_file:
+      - ./envs/writer.env
+    volumes:
+      - writer_data:/app/data
+    networks:
+      - geely-net
+
+  writer-frontend:
+    image: writer-frontend:latest
+    container_name: writer-frontend
+    restart: always
+    environment:
+      # 前端在浏览器运行，需要通过网关访问后端
+      # 这里指向网关地址，网关会将 /writer-api/ 转发到 writer-backend
+      NEXT_PUBLIC_API_URL: /writer-api
+    networks:
+      - geely-net
+
+  # =================================================================
+  # 5. Todify4 (任务管理)
+  # =================================================================
+  todify4-backend:
+    image: todify4-backend:latest
+    container_name: todify4-backend
+    restart: always
+    env_file:
+      - ./envs/todify4.env
+    volumes:
+      - todify4_data:/app/data
+      - todify4_uploads:/app/uploads
+    networks:
+      - geely-net
+
+  todify4-frontend:
+    image: todify4-frontend:latest
+    container_name: todify4-frontend
+    restart: always
+    networks:
+      - geely-net

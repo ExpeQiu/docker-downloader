@@ -1,0 +1,15 @@
+{
+	"folders": [
+		{
+			"name": "todify4",
+			"path": "../../03T/todify4"
+		},
+		{
+			"name": "07Docker",
+			"path": ".."
+		}
+	],
+	"settings": {
+		"git.ignoreLimitWarning": true
+	}
+}

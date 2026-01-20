@@ -1,0 +1,20 @@
+{
+	"folders": [
+		{
+			"path": ".."
+		},
+		{
+			"path": "../../03T/TPD2"
+		},
+		{
+			"path": "../../03T/writer"
+		},
+		{
+			"path": "../../03T/todify4"
+		},
+		{
+			"path": "../../03T/GeelyTPD/unified-portal"
+		}
+	],
+	"settings": {}
+}

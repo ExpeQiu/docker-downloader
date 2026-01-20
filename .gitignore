@@ -1,0 +1,14 @@
+# Ignore system files
+.DS_Store
+._*
+
+# Ignore build artifacts
+*.tar
+*.tar.gz
+*.zip
+
+# Ignore node modules
+node_modules/
+
+# Ignore local config
+.env

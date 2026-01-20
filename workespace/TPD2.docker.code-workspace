@@ -1,0 +1,13 @@
+{
+	"folders": [
+		{
+			"path": "../../03T/TPD2"
+		},
+		{
+			"path": ".."
+		}
+	],
+	"settings": {
+		"git.ignoreLimitWarning": true
+	}
+}

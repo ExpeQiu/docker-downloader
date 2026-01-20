@@ -1,0 +1,34 @@
+# ============================================================================
+# 文档整理配置文件示例
+# 复制此文件为 .organize-docs.conf 并修改配置
+# ============================================================================
+
+# 文档类型扩展名（空格分隔）
+DOC_EXTENSIONS="md markdown txt rst org pdf docx doc"
+
+# 配置文件文档扩展名（空格分隔）
+CONFIG_DOC_EXTENSIONS="yml yaml json xml"
+
+# 扫描目录（空格分隔，相对于项目根目录）
+# 如果为空，脚本会自动检测常见目录
+SCAN_DIRS=".specstory/history docs guide ."
+
+# 排除目录（空格分隔）
+EXCLUDE_DIRS=".git node_modules .specstory dist build .next .venv venv"
+
+# 分类模式：date|type|project
+# - date: 按日期分类（年/月）
+# - type: 按文档类型分类
+# - project: 按项目+日期分类
+CLASSIFY_MODE="date"
+
+# 目标目录（相对于项目根目录）
+TARGET_DIR="docs"
+
+# 是否生成索引文件
+GENERATE_INDEX=true
+
+# 文件操作模式：move|copy
+# - move: 移动文件（删除原文件）
+# - copy: 复制文件（保留原文件）
+FILE_OPERATION="copy"

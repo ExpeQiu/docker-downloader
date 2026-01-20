@@ -1,0 +1,54 @@
+name: Universal Docker Image Downloader
+
+on:
+  workflow_dispatch:
+    inputs:
+      images:
+        description: 'List of images to download (space separated, e.g., node:20-alpine nginx:alpine)'
+        required: true
+        default: 'node:20-alpine nginx:alpine'
+      platform:
+        description: 'Target platform (e.g., linux/amd64, linux/arm64)'
+        required: false
+        default: 'linux/amd64'
+
+jobs:
+  download-and-package:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout (Optional)
+        uses: actions/checkout@v4
+
+      - name: Pull Images
+        run: |
+          PLATFORM="${{ github.event.inputs.platform }}"
+          IMAGES="${{ github.event.inputs.images }}"
+          
+          echo "Target Platform: $PLATFORM"
+          echo "Images to pull: $IMAGES"
+          
+          for img in $IMAGES; do
+            echo "Pulling $img for $PLATFORM..."
+            docker pull --platform "$PLATFORM" "$img"
+          done
+
+      - name: Save Images to Tarball
+        run: |
+          IMAGES="${{ github.event.inputs.images }}"
+          # Replace colons and slashes with underscores for filename
+          SAFE_NAME=$(echo "$IMAGES" | sed 's/[ :/]/_/g' | cut -c1-50)
+          TAR_NAME="docker-images-${SAFE_NAME}.tar"
+          
+          echo "Saving images to $TAR_NAME..."
+          docker save -o "$TAR_NAME" $IMAGES
+          
+          # Compress to save space and bandwidth
+          gzip "$TAR_NAME"
+          echo "ARTIFACT_NAME=${TAR_NAME}.gz" >> $GITHUB_ENV
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: downloaded-images
+          path: ${{ env.ARTIFACT_NAME }}
+          retention-days: 3
