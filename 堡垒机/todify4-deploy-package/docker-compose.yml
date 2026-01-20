@@ -1,0 +1,56 @@
+version: '3.8'
+
+services:
+  gateway:
+    image: nginx:alpine
+    container_name: todify4-gateway
+    restart: unless-stopped
+    ports:
+      - "8281:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    networks:
+      default:
+    depends_on:
+      - frontend
+      - backend
+
+  backend:
+    image: todify4-backend:latest
+    container_name: todify4-backend
+    platform: linux/amd64
+    ports:
+      - "8280:8113"
+    environment:
+      - NODE_ENV=production
+      - PORT=8113
+      - DB_TYPE=sqlite
+      - SQLITE_DB_PATH=./data/todify4.db
+    volumes:
+      - ./data:/app/data
+      - ./uploads:/app/uploads
+    networks:
+      default:
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:8113/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  frontend:
+    image: todify4-frontend:latest
+    container_name: todify4-frontend
+    platform: linux/amd64
+    # ports: - "8281:80"  <-- Removed, handled by gateway
+    networks:
+      default:
+    restart: unless-stopped
+    depends_on:
+      - backend
+
+networks:
+  default:
+    external:
+      name: geely-net
