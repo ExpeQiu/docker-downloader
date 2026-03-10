@@ -6,7 +6,7 @@ on:
       images:
         description: 'List of images to download (space separated, e.g., node:20-alpine nginx:alpine)'
         required: true
-        default: 'postgres:16-bookworm'
+        default: 'pgvector:pg16'
       platform:
         description: 'Target platform (e.g., linux/amd64, linux/arm64)'
         required: false
